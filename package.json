@@ -1,0 +1,11 @@
+{
+  "name": "@xiqiqi/site-tales",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "离奇故事 · 千奇百怪",
+  "scripts": {
+    "dev": "node ../oddities-core/scripts/build.mjs --config site.config.ts --dev",
+    "build": "node ../oddities-core/scripts/build.mjs --config site.config.ts"
+  }
+}

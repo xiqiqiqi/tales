@@ -1,0 +1,72 @@
+name: Deploy site
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  repository_dispatch:
+    types: [content-update]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout site
+        uses: actions/checkout@v4
+
+      - name: Checkout core
+        uses: actions/checkout@v4
+        with:
+          repository: xiqiqiqi/oddities-core
+          path: .xiqiqi/core
+
+      - name: Checkout content
+        uses: actions/checkout@v4
+        with:
+          repository: xiqiqiqi/oddities-and-mysteries
+          path: .xiqiqi/content
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: .xiqiqi/core/package-lock.json
+
+      - name: Install core dependencies
+        run: npm ci
+        working-directory: .xiqiqi/core
+
+      - name: Build site
+        run: node scripts/build.mjs --config "$GITHUB_WORKSPACE/site.config.ts" --content "$GITHUB_WORKSPACE/.xiqiqi/content" --out "$GITHUB_WORKSPACE/dist"
+        working-directory: .xiqiqi/core
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
